@@ -1,0 +1,126 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - crawler-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - crawler-network
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - kafka
+    entrypoint: /bin/sh
+    command: |
+      -c "
+      echo 'Waiting for Kafka to be ready...'
+      cub kafka-ready -b kafka:9092 1 30
+      kafka-topics --create --topic urls_to_deduplicate --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists
+      kafka-topics --create --topic deduplicated_urls --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists
+      kafka-topics --create --topic downloaded_documents --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists
+      kafka-topics --create --topic unique_documents --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists
+      kafka-topics --create --topic extracted_urls --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists
+      echo 'Topics created.'
+      "
+    networks:
+      - crawler-network
+
+  url_manager:
+    build:
+      context: ./url_manager
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+
+  url_deduplicator:
+    build:
+      context: ./url_deduplicator
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+
+  html_downloader:
+    build:
+      context: ./html_downloader
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+
+  document_deduplicator:
+    build:
+      context: ./document_deduplicator
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+
+  document_extractor:
+    build:
+      context: ./document_extractor
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+
+  url_filter:
+    build:
+      context: ./url_filter
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - kafka-setup
+    networks:
+      - crawler-network
+  redis:
+    image: redis:6
+    volumes:
+      - redis-data:/data
+    networks:
+      - crawler-network
+
+volumes:
+  redis-data:
+
+networks:
+  crawler-network:
+    driver: bridge
