@@ -42,8 +42,8 @@ services:
 
   url_manager:
     build:
-      context: ./url_manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./url_manager/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -54,8 +54,8 @@ services:
 
   url_deduplicator:
     build:
-      context: ./url_deduplicator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./url_deduplicator/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -66,8 +66,8 @@ services:
 
   html_downloader:
     build:
-      context: ./html_downloader
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./html_downloader/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -78,8 +78,8 @@ services:
 
   document_deduplicator:
     build:
-      context: ./document_deduplicator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./document_deduplicator/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -90,8 +90,8 @@ services:
 
   document_extractor:
     build:
-      context: ./document_extractor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./document_extractor/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -102,8 +102,8 @@ services:
 
   url_filter:
     build:
-      context: ./url_filter
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./url_filter/Dockerfile
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
@@ -111,6 +111,7 @@ services:
       - kafka-setup
     networks:
       - crawler-network
+
   redis:
     image: redis:6
     volumes:
@@ -120,6 +121,7 @@ services:
 
 volumes:
   redis-data:
+
 
 networks:
   crawler-network:

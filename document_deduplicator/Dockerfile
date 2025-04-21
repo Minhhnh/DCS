@@ -1,17 +1,15 @@
-# Use a lightweight Python base image
 FROM python:3.9-slim
 
-# Set working directory
 WORKDIR /app
 
 # Copy the shared kafka_base module
-COPY ../kafka_base/kafka_base.py .
+COPY kafka_base.py .
 
 # Copy the service code
-COPY url_manager.py .
+COPY document_deduplicator/document_deduplicator.py ./document_deduplicator.py
 
 # Install dependencies
-RUN pip install --no-cache-dir confluent-kafka
+RUN pip install --no-cache-dir confluent-kafka redis google-cloud-storage python-dotenv
 
 # Command to run the service
-CMD ["python", "url_manager.py"]
+CMD ["python", "document_deduplicator.py"]
